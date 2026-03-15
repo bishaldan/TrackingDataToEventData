@@ -6,24 +6,26 @@ from FootballMatchAnalysis.analysis.utils import *
 from FootballMatchAnalysis.analysis.zones import *
 from parse_possessions import *
 from collections import deque
-import time
-import pprint
-import os
-import re
-import json
 import math
 import pandas as pd
 
+################### GETTING STARTED ###################
+# This script was designed to convert tracking data to
+# event data. Adjust the parameters below and run this 
+# script to recieve event data folllowing Metrica's 
+# standard. Once the script is complete, events will 
+# be stored in the `df` dataframe.
 
-possession = { 
-    "StartFrame" : None,
-    "EndFrame" : None,
-    "Team" : None,
-    "Player" : None,
-    "OnBall" : [],
-    "Type" : None,
-    "StartXY" : None
-}
+# Data Source
+DATADIR = './data'
+game_id = 1
+
+# Script Parameters
+generate_video = False # Generate video from snalysis
+print_frames = True    # Print Frames (for debuging)
+start_frame = 0        # Start Frame
+end_frame = 4000       # End Frame
+#######################################################
 
 def annotate_frame(plot, dq):
     i = 1
@@ -84,7 +86,6 @@ def ball_maintains_direction(p1_start, p1_end, p2_start, p2_end,
     if n1 is None or n2 is None:
         return False
 
-    # Direction check (angle)
     dot = n1[0] * n2[0] + n1[1] * n2[1]
     dot = max(-1.0, min(1.0, dot))
 
@@ -92,7 +93,6 @@ def ball_maintains_direction(p1_start, p1_end, p2_start, p2_end,
     if angle > angle_tol_deg:
         return False
 
-    # Collinearity check
     cross = abs(
         (p2_start[0] - p1_start[0]) * v1[1] -
         (p2_start[1] - p1_start[1]) * v1[0]
@@ -228,40 +228,22 @@ def out_of_touchline(ball):
     return False
 
 
-'''
-pattern = re.compile(r"^\d+\.png$")
-
-for filename in os.listdir("./frames"):
-    if pattern.match(filename) and os.path.isfile(filename):
-        os.remove(filename)
-
-'''
-
-pp = pprint.PrettyPrinter(indent=4)
-pp = pprint.PrettyPrinter(width=41, compact=True)
-
-DATADIR = './data'
-game_id = 1
-
+# Load Match Data
 plot = Plot()
 match = Match(DATADIR, game_id)
 
-# Params
-generate_video = False
-print_frames = True
-start_frame = 0
-end_frame = 4000
-
+# Set Up Dequeues
 possession_dq = deque(maxlen=5)
 events_dq = deque(maxlen=5)
 possession_view_dq = deque(maxlen=3)
 
+# Possession Data and Event Data
 possessions = []
 all_events = []
 
+# Default Tracking State 
 team_in_possession = None
 ball_out = True
-
 possession = { 
     "StartFrame" : None,
     "EndFrame" : None,
@@ -274,7 +256,7 @@ possession = {
 
 # Generate events
 for i in range(start_frame, end_frame+1):
-    #Get Frame Information
+    # Get Frame Information
     frame = match.get_moment(i)
     if generate_video or print_frames:
         plot = frame.plot_moment()
@@ -282,6 +264,7 @@ for i in range(start_frame, end_frame+1):
     is_someone_on_ball = frame.possession(threshold=.75)
     closest_player = frame.possession(threshold=1000)
     num_on_ball = frame.players_competeing_for_ball()
+
     if closest_player:
         dist_from_ball = frame.distance_from_ball(closest_player)
 
@@ -292,7 +275,7 @@ for i in range(start_frame, end_frame+1):
 
         print(f"Frame {i}: {round(dist_from_ball, 4)} {check} ")
 
-        #Finding First Possession
+        # Finding First Possession
         if len(possessions) == 0 and possession["StartFrame"] is None:
             if is_someone_on_ball:
                 possession = { 
@@ -307,16 +290,16 @@ for i in range(start_frame, end_frame+1):
         else:
             if possession["StartFrame"] and possession["Type"] == "Ball Out":
                 if ball is None:
-                    #Ball Lost, do nothing
+                    # Ball Lost, do nothing
                     pass
                 elif is_ball_out(ball):
-                    #Ball still is out, do nothing
+                    # Ball still is out, do nothing
                     pass
                 else:
-                    #Ball is back
+                    # Ball is back
                     possession["EndFrame"] = i - 1
             elif is_ball_out(ball):
-                #Ball is out of bounds
+                # Ball is out of bounds
                 possession = { 
                     "StartFrame" : i,
                     "EndFrame" : None,
@@ -329,7 +312,7 @@ for i in range(start_frame, end_frame+1):
             elif is_someone_on_ball:
                 if len(possessions) > 0:
                     if possession["StartFrame"] and (closest_player.name == possession["Player"].name):
-                        #Ball is still with current player
+                        # Ball is still with current player
                         pass
                     elif closest_player.team != possessions[-1]["Team"]:
                         if ball_goes_past_them(i, closest_player):
@@ -338,10 +321,10 @@ for i in range(start_frame, end_frame+1):
                             next_point = find_next_player_on_ball(i, closest_player)
                             next_ball = match.get_moment(next_point).ball
                             if ball_maintains_direction((last_ball.x, last_ball.y),(ball.x, ball.y), (ball.x, ball.y), (next_ball.x, next_ball.y)):
-                                #Ball moved past player and can be ignored
+                                # Ball moved past player and can be ignored
                                 pass
                             else:
-                                #Ball left Player, changed directions, likely intercepted
+                                # Ball left Player, changed directions, likely intercepted
                                 if possession["StartFrame"] is None:
                                     possession = { 
                                         "StartFrame" : i - 1,
@@ -353,7 +336,7 @@ for i in range(start_frame, end_frame+1):
                                         "StartXY" : (ball.x, ball.y)
                                     }
                         else:
-                            #Ball Sticks with Player, possession likely over
+                            # Ball Sticks with Player, possession likely over
                             possession = { 
                                 "StartFrame" : i - 1,
                                 "EndFrame" : None,
@@ -418,3 +401,5 @@ for i in range(start_frame, end_frame+1):
             plot.print(f"./frames/{i}.png")
         elif print_frames:
             plot.print(f"./frames/{i}.png")
+
+df = pd.DataFrame(events)
