@@ -506,74 +506,6 @@ body {
 .pill-positive { background: var(--green-bg); color: #15803d; }
 .pill-negative { background: var(--red-bg); color: #dc2626; }
 
-/* ─── POSSESSION BAR ─── */
-.possession-bar-wrap { padding: 20px 24px; }
-.possession-bar {
-  display: flex;
-  height: 40px;
-  border-radius: var(--r-md);
-  overflow: hidden;
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-.poss-fill {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  transition: width 0.6s ease;
-}
-.poss-home { background: linear-gradient(135deg, #38bdf8, #0ea5e9); }
-.poss-away { background: linear-gradient(135deg, #fb923c, #f97316); }
-
-/* ─── EVENT TIMELINE ─── */
-.timeline-strip-wrap {
-  padding: 16px 24px;
-}
-#timeline-canvas {
-  width: 100%;
-  height: 60px;
-  border-radius: var(--r-sm);
-  background: var(--bg);
-}
-
-/* ─── PLAYER STATS TABLE ─── */
-.player-stats-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.player-stats-table th {
-  text-align: left;
-  padding: 10px 16px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-tertiary);
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-}
-.player-stats-table td {
-  padding: 10px 16px;
-  font-size: 13px;
-  border-bottom: 1px solid var(--border-light);
-}
-.player-stats-table tr:hover td { background: rgba(99,102,241,0.03); }
-.player-dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-.player-dot.home-dot { background: #38bdf8; }
-.player-dot.away-dot { background: #fb923c; }
-
-
 /* Utility */
 .is-hidden { display: none !important; }
 
@@ -824,3 +756,119 @@ body {
   .status-banner { flex-direction: column; align-items: flex-start; }
   .btn-download { margin-left: 0; width: 100%; justify-content: center; }
 }
+
+/* ─── HELP BUTTON & MODAL ─── */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.help-btn-icon {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-tertiary);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.help-btn-icon:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  transition: opacity 0.3s;
+}
+.modal-overlay.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-content {
+  background: var(--surface);
+  width: 90%;
+  max-width: 500px;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  animation: modalIn 0.3s ease-out;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--r-sm);
+}
+.modal-close-btn:hover {
+  background: var(--bg);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.help-section {
+  margin-bottom: 24px;
+}
+.help-section:last-child {
+  margin-bottom: 0;
+}
+.help-section h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.help-section p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.help-section strong {
+  color: var(--text-primary);
+}
+

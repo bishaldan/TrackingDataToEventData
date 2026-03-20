@@ -1,124 +1,65 @@
-<p align="center">
-  <img src="docs/images/dashboard_top.png" alt="Tracking to Event Studio" width="100%">
-</p>
+# ⚽ Tracking to Event Studio v2.0
 
-# ⚽ Tracking to Event Studio
+A professional-grade football analytics dashboard that transforms raw tracking data into meaningful event feeds (Passes, Shots, Recoveries) with real-time 2D visualization and tactical build-up analysis.
 
-![Match Demo](docs/images/replay_demo.webp)
-
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688)
-![Docker](https://img.shields.io/badge/docker-ready-2496ED)
-
-**Tracking to Event Studio** is a professional-grade analytical dashboard that automatically converts raw, low-frequency football tracking data (e.g., player coordinates) into rich, high-frequency event sequences (Passes, Shots, Recoveries, Ball Losses, etc.).
-
-Originally inspired by and built upon the core heuristic algorithms from [JohnComonitski/TrackingDataToEventData](https://github.com/JohnComonitski/TrackingDataToEventData), this project completely redesigns the experience into a modern, interactive web application featuring a stunning UI and advanced coaching analytics.
+![Dashbord Preview](file:///Users/bishalmahatchhetri/.gemini/antigravity/brain/c31c3ece-3708-445c-b75f-6305b8868a0b/analysis_results_1774007616030.png)
 
 ## 🌟 Key Features
 
-### 1. Advanced Analytics Dashboard
-- **Instant Insights**: Instantly view generated event counts, matched ratios against reference data, and mean frame error metrics.
-- **Player Stats**: Automatically calculated touches, passes, shots, recoveries, and losses for every player on the pitch.
-- **Possession Tracking**: Dynamic "Home vs Away" possession percentage bar based on ball control durations.
+### 📍 2D Event Visualizer
+Instantly see the spatial distribution of events. Every pass is rendered with directional arrows, and shots are highlighted with glowing tactical markers.
 
-### 2. 🎬 Animated Match Replay & Pitch Visualization
-- **2D Event Map**: Static pitch drawing of all detected events (passes, shots, etc.) across the game.
-- **Interactive Replay**: Watch the players and the ball move in real-time. Features include **Scrubbing, Play/Pause, and Speed Controls**.
-- **Coach's View**: Replay includes **Player Jersey Numbers** and a **Ball Movement Trail** to easily track patterns of play.
+### 🎬 Animated Match Replay
+Don't just see the data—watch it. Our high-performance canvas engine replays player tracking data frame-by-frame, allowing you to analyze positioning, spacing, and movement patterns.
 
-<p align="center">
-  <img src="docs/images/replay_trail.png" alt="Replay Visualizer" width="80%">
-</p>
+### ⚽ Automated Build-Up Analysis
+The "Coach's Choice" feature. The system automatically identifies shots and goals, then traces back the entire possession chain to show you the exact sequence of passes and recoveries that led to the moment.
 
-### 3. 🎯 Key Moments & Build-Up Play Analysis
-- Automatically detect **Goals and Shots**.
-- **Trace the Build-up**: The engine works backwards from every shot to map the unbroken sequence of passes and recoveries that led to the event.
-- **Watch Build-Up**: Click a button to instantly auto-load the exact frame sequence of the build-up chain into the Match Replay.
+### 🚀 Direct File Upload
+Supports direct CSV uploads for Home and Away tracking data. No data directory lock-in; just upload and analyze.
 
-<p align="center">
-  <img src="docs/images/key_moments.png" alt="Key Moments Engine" width="80%">
-</p>
+---
 
-## ⚙️ System Architecture
+## 🛠️ Quick Start (Docker)
 
-```mermaid
-flowchart TD
-    subgraph "Input Layer"
-        A1[Raw Tracking CSV\nHome & Away Coordinates] --> B
-    end
-    
-    subgraph "FastAPI Backend Engine"
-        B[Data Parser / Metrica] --> C{Heuristic Engine\npipeline.py}
-        C --> D[Possession Logic]
-        C --> E[Pass / Shot / Recovery Detection]
-        E --> F[Event Sequence Generator]
-        D --> F
-    end
-    
-    subgraph "Frontend Dashboard"
-        F --> |JSON Payload| G[Vue/Vanilla JS Client]
-        G --> H1(Event Timeline Strip)
-        G --> H2(Possession Bar & Stats)
-        G --> H3(2D Match Replay Canvas)
-        G --> H4[Key Moments & Build-Up Engine]
-        H4 -.->|Watch Build-Up| H3
-    end
-    
-    subgraph "Output"
-        F --> I[Formatted Event Data CSV]
-    end
-```
+The fastest way to get started is using Docker:
 
-## 🚀 Quick Start (Docker)
+1. **Build the image**:
+   ```bash
+   docker build -t tracking-to-event .
+   ```
 
-The fastest and easiest way to use the dashboard is via Docker.
+2. **Run the dashboard**:
+   ```bash
+   docker run -p 8000:8000 tracking-to-event
+   ```
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/TrackingDataToEventData.git
-cd TrackingDataToEventData
+3. **Open Explorer**:
+   Navigate to [http://localhost:8000](http://localhost:8000)
 
-# 2. Build the Docker image
-docker build -t tracking-to-event .
+---
 
-# 3. Run the container
-docker run -p 8000:8000 tracking-to-event
-```
+## 🏗️ Project Architecture
 
-**Open your browser and navigate to `http://localhost:8000`.**
+- **Backend**: FastAPI (Python) powers the event detection engine and frame-sampling API.
+- **Frontend**: Vanila JS + CSS for a lightweight, high-performance "Glassmorphism" UI.
+- **Engine**: Rule-based possession detection using coordinate-geometry and velocity heuristics.
 
-## 💻 Manual Setup (Python)
+---
 
-If you prefer to run it locally without Docker:
+## 📜 Credits & Attribution
 
-```bash
-# 1. Create a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+This project is a heavily modernized and expanded version of the original exploration by **John Comonitski**.
 
-# 2. Install dependencies
-pip install -r requirements.txt
+- **Original Repository**: [JohnComonitski/TrackingDataToEventData](https://github.com/JohnComonitski/TrackingDataToEventData.git)
+- **Contribution**: We have added the entirely new 2D pitch visualizer, the animated replay system, the build-up chain analysis, and the modern web dashboard interface while preserving and enhancing the core event detection logic.
 
-# 3. Start the FastAPI server
-uvicorn web:app --reload --host 0.0.0.0 --port 8000
-```
+---
 
+## 🤝 Contribution
 
-## 📂 Project Structure
+Feel free to open issues or submit PRs! This tool is built by and for football analysts who love data.
 
-- `tracking_to_event/models.py`: Core data classes (Player, Frame, Event)
-- `tracking_to_event/pipeline.py`: The event extraction engine (Heuristics, Velocity tracking, Possession Logic)
-- `tracking_to_event/validation.py`: Scoring engine comparing generated vs. human-annotated reference events
-- `web.py`: FastAPI server handling data parsing, algorithm execution, and serving the frontend
-- `tracking_to_event/templates/index.html`: Modern, card-based premium UI layout
-- `tracking_to_event/static/app.js`: Complex frontend logic handling HTML5 Canvas rendering, replay animations, and build-up chain tracing
+---
 
-## 🤝 Acknowledgements
-
-- Core extraction algorithms inspired by [JohnComonitski/TrackingDataToEventData](https://github.com/JohnComonitski/TrackingDataToEventData).
-- Dataset provided by Metrica Sports.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+*Built with ❤️ for the Football Analytics Community.*

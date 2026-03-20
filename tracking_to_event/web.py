@@ -31,14 +31,6 @@ def create_app(data_dir: str | Path = "data") -> FastAPI:
     templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
     @app.get("/", response_class=HTMLResponse)
-    async def landing(request: Request) -> HTMLResponse:
-        return templates.TemplateResponse(
-            request,
-            "landing.html",
-            {},
-        )
-
-    @app.get("/dashboard", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:
         games = list_supported_games(app.state.data_dir)
         return templates.TemplateResponse(
@@ -207,11 +199,11 @@ def create_app(data_dir: str | Path = "data") -> FastAPI:
                     "period": fr.period,
                     "ball": [round(fr.ball.x, 4), round(fr.ball.y, 4)],
                     "home": [
-                        [round(p.x, 4), round(p.y, 4), p.number]
+                        [round(p.x, 4), round(p.y, 4)]
                         for p in fr.players if p.team == "Home"
                     ],
                     "away": [
-                        [round(p.x, 4), round(p.y, 4), p.number]
+                        [round(p.x, 4), round(p.y, 4)]
                         for p in fr.players if p.team == "Away"
                     ],
                 })

@@ -16,6 +16,21 @@ const generatedTableWrap = document.getElementById("generated-table-wrap");
 const referenceTableWrap = document.getElementById("reference-table-wrap");
 const navStatus = document.getElementById("nav-status");
 
+/* ─── HELP MODAL ─── */
+const helpBtn = document.getElementById("help-btn");
+const helpModal = document.getElementById("help-modal");
+const closeHelp = document.querySelector(".modal-close-btn");
+
+if (helpBtn && helpModal) {
+  helpBtn.addEventListener("click", () => helpModal.classList.remove("is-hidden"));
+  if (closeHelp) {
+    closeHelp.addEventListener("click", () => helpModal.classList.add("is-hidden"));
+  }
+  helpModal.addEventListener("click", (e) => {
+    if (e.target === helpModal) helpModal.classList.add("is-hidden");
+  });
+}
+
 /* ─── MODE TABS ─── */
 let currentMode = "sample";
 
@@ -142,11 +157,8 @@ function renderResults(payload) {
   // Pitch
   drawPitch(payload.events);
 
-  // Key Moments & New Features
+  // Key Moments
   buildKeyMoments(payload.events);
-  buildPlayerStats(payload.events);
-  buildPossessionBar(payload.events);
-  buildEventTimeline(payload.events);
 
   // Store all events for replay linking
   window.__allEvents = payload.events;
@@ -428,67 +440,53 @@ function drawReplayFrame(idx) {
   replayCtx.strokeRect(pad+pw-gaW, H/2-gaH/2, gaW, gaH);
 
   // Draw home players (blue)
-  fr.home.forEach(([x, y, num]) => {
+  fr.home.forEach(([x, y]) => {
     const px = pad + x * pw, py = pad + y * ph;
     replayCtx.beginPath();
-    replayCtx.arc(px, py, 11, 0, Math.PI * 2);
+    replayCtx.arc(px, py, 8, 0, Math.PI * 2);
     replayCtx.fillStyle = "#38bdf8";
     replayCtx.fill();
     replayCtx.strokeStyle = "#0c4a6e";
     replayCtx.lineWidth = 2;
     replayCtx.stroke();
-    // Jersey
-    if (num) {
-      replayCtx.fillStyle = "#fff";
-      replayCtx.font = "bold 10px var(--font-mono, monospace)";
-      replayCtx.textAlign = "center";
-      replayCtx.textBaseline = "middle";
-      replayCtx.fillText(num.replace("Player", ""), px, py + 1);
+
+    // Hover effect (Home)
+    if (__mouseX !== null && __mouseY !== null) {
+      const dist = Math.sqrt((px - __mouseX) ** 2 + (py - __mouseY) ** 2);
+      if (dist < 10) {
+        replayCtx.fillStyle = "white";
+        replayCtx.font = "bold 12px Inter, sans-serif";
+        replayCtx.textAlign = "center";
+        replayCtx.fillText(`Home #${num}`, px, py - 15);
+      }
     }
   });
 
   // Draw away players (orange)
-  fr.away.forEach(([x, y, num]) => {
+  fr.away.forEach(([x, y]) => {
     const px = pad + x * pw, py = pad + y * ph;
     replayCtx.beginPath();
-    replayCtx.arc(px, py, 11, 0, Math.PI * 2);
+    replayCtx.arc(px, py, 8, 0, Math.PI * 2);
     replayCtx.fillStyle = "#fb923c";
     replayCtx.fill();
     replayCtx.strokeStyle = "#7c2d12";
     replayCtx.lineWidth = 2;
     replayCtx.stroke();
-    // Jersey
-    if (num) {
-      replayCtx.fillStyle = "#fff";
-      replayCtx.font = "bold 10px var(--font-mono, monospace)";
-      replayCtx.textAlign = "center";
-      replayCtx.textBaseline = "middle";
-      replayCtx.fillText(num.replace("Player", ""), px, py + 1);
+
+    // Hover effect (Away)
+    if (__mouseX !== null && __mouseY !== null) {
+      const dist = Math.sqrt((px - __mouseX) ** 2 + (py - __mouseY) ** 2);
+      if (dist < 10) {
+        replayCtx.fillStyle = "white";
+        replayCtx.font = "bold 12px Inter, sans-serif";
+        replayCtx.textAlign = "center";
+        replayCtx.fillText(`Away #${num}`, px, py - 15);
+      }
     }
   });
 
-  // Draw ball trail and ball
+  // Draw ball (white with glow)
   if (fr.ball) {
-    // Collect past 15 frames of ball positions
-    const trail = [];
-    for (let i = Math.max(0, currentReplayFrame - 15); i < currentReplayFrame; i++) {
-        if (replayFrames[i].ball) trail.push(replayFrames[i].ball);
-    }
-    
-    // Draw trail
-    if (trail.length > 1) {
-        replayCtx.beginPath();
-        replayCtx.moveTo(pad + trail[0][0] * pw, pad + trail[0][1] * ph);
-        for (let i = 1; i < trail.length; i++) {
-            replayCtx.lineTo(pad + trail[i][0] * pw, pad + trail[i][1] * ph);
-        }
-        replayCtx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-        replayCtx.lineWidth = 3;
-        replayCtx.setLineDash([4, 4]);
-        replayCtx.stroke();
-        replayCtx.setLineDash([]);
-    }
-
     const bx = pad + fr.ball[0] * pw, by = pad + fr.ball[1] * ph;
     // Glow
     replayCtx.beginPath();
@@ -520,6 +518,20 @@ function fmtTime(s) {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+let __mouseX = null;
+let __mouseY = null;
+if (replayCanvas) {
+  replayCanvas.addEventListener("mousemove", (e) => {
+    const rect = replayCanvas.getBoundingClientRect();
+    __mouseX = (e.clientX - rect.left) * (replayCanvas.width / rect.width);
+    __mouseY = (e.clientY - rect.top) * (replayCanvas.height / rect.height);
+  });
+  replayCanvas.addEventListener("mouseleave", () => {
+    __mouseX = null;
+    __mouseY = null;
+  });
 }
 
 // Draw empty replay pitch on load
@@ -637,128 +649,9 @@ function watchMoment(startFrame, endFrame) {
   // Scroll to replay
   document.getElementById("replay-card").scrollIntoView({ behavior: "smooth", block: "start" });
 
+  // Auto-trigger load
   setTimeout(() => {
     document.getElementById("replay-load").click();
   }, 400);
-}
-
-/* ═══════════════════════════════════════════════════════
-   PLAYER STATS, POSSESSION & TIMELINE
-   ═══════════════════════════════════════════════════════ */
-
-function buildPlayerStats(events) {
-  const container = document.getElementById("player-stats-wrap");
-  if (!container || !events) return;
-
-  const stats = {};
-  events.forEach(ev => {
-    const p = ev.From;
-    if (!p) return;
-    if (!stats[p]) stats[p] = { team: ev.Team, passes: 0, shots: 0, recoveries: 0, losses: 0, touches: 0 };
-    
-    stats[p].touches++;
-    if (ev.Type === "PASS") stats[p].passes++;
-    else if (ev.Type === "SHOT") stats[p].shots++;
-    else if (ev.Type === "RECOVERY") stats[p].recoveries++;
-    else if (ev.Type === "BALL LOST") stats[p].losses++;
-  });
-
-  const players = Object.entries(stats).map(([name, data]) => ({ name, ...data }));
-  players.sort((a, b) => b.touches - a.touches);
-
-  if (players.length === 0) {
-    container.innerHTML = '<div class="empty-msg">No player stats available.</div>';
-    return;
-  }
-
-  const rows = players.map(p => {
-    const dot = p.team === "Home" ? "home-dot" : "away-dot";
-    return `
-      <tr>
-        <td><span class="player-dot ${dot}"></span>${esc(p.name)}</td>
-        <td>${esc(p.team)}</td>
-        <td>${p.touches}</td>
-        <td>${p.passes}</td>
-        <td>${p.shots}</td>
-        <td>${p.recoveries}</td>
-        <td>${p.losses}</td>
-      </tr>
-    `;
-  }).join("");
-
-  container.innerHTML = `
-    <table class="player-stats-table">
-      <thead>
-        <tr>
-          <th>Player</th><th>Team</th><th>Touches</th><th>Passes</th><th>Shots</th><th>Recoveries</th><th>Losses</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
-  container.classList.remove("empty-msg");
-}
-
-function buildPossessionBar(events) {
-  const homeBar = document.getElementById("possession-home");
-  const awayBar = document.getElementById("possession-away");
-  if (!homeBar || !awayBar || !events) return;
-
-  let homeFrames = 0, awayFrames = 0;
-  events.forEach(ev => {
-    const dur = (ev["End Frame"] || 0) - (ev["Start Frame"] || 0);
-    if (dur > 0) {
-      if (ev.Team === "Home") homeFrames += dur;
-      else if (ev.Team === "Away") awayFrames += dur;
-    }
-  });
-
-  const total = homeFrames + awayFrames;
-  if (total === 0) return;
-
-  const homePct = Math.round((homeFrames / total) * 100) || 0;
-  const awayPct = 100 - homePct;
-
-  homeBar.style.width = `${homePct}%`;
-  homeBar.querySelector("span").textContent = `Home ${homePct}%`;
-  
-  awayBar.style.width = `${awayPct}%`;
-  awayBar.querySelector("span").textContent = `Away ${awayPct}%`;
-}
-
-function buildEventTimeline(events) {
-  const canvas = document.getElementById("timeline-canvas");
-  if (!canvas || !events) return;
-  const ctx = canvas.getContext("2d");
-  const W = canvas.width, H = canvas.height;
-  
-  ctx.clearRect(0, 0, W, H);
-  if (events.length === 0) return;
-
-  const minFrame = Math.min(...events.map(e => e["Start Frame"] || 0));
-  const maxFrame = Math.max(...events.map(e => e["End Frame"] || e["Start Frame"] || 0));
-  const range = maxFrame - minFrame;
-  if (range <= 0) return;
-
-  // Background track
-  ctx.fillStyle = "rgba(255,255,255,0.05)";
-  ctx.fillRect(0, H/2 - 4, W, 8);
-
-  events.forEach(ev => {
-    const sFrame = ev["Start Frame"] || 0;
-    const eFrame = ev["End Frame"] || sFrame;
-    
-    let x1 = ((sFrame - minFrame) / range) * W;
-    let x2 = ((eFrame - minFrame) / range) * W;
-    let w = Math.max(2, x2 - x1);
-
-    // Color by type/team
-    ctx.fillStyle = ev.Team === "Home" ? "rgba(56, 189, 248, 0.7)" : "rgba(251, 146, 60, 0.7)";
-    if (ev.Type === "SHOT") ctx.fillStyle = "#ef4444";
-    if (ev.Type === "BALL LOST" || ev.Type === "BALL OUT") ctx.fillStyle = "rgba(107, 114, 128, 0.5)";
-
-    const h = (ev.Type === "SHOT" || ev.Type === "GOAL") ? 24 : 12;
-    ctx.fillRect(x1, H/2 - h/2, w, h);
-  });
 }
 
