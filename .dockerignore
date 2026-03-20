@@ -3,4 +3,6 @@ __pycache__/
 .pytest_cache/
 out/
 images/
+docs/media/
+.DS_Store
 *.pyc

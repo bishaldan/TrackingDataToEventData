@@ -15,6 +15,8 @@ const typeCounts = document.getElementById("type-counts");
 const generatedTableWrap = document.getElementById("generated-table-wrap");
 const referenceTableWrap = document.getElementById("reference-table-wrap");
 const navStatus = document.getElementById("nav-status");
+const momentsList = document.getElementById("moments-list");
+let downloadObjectUrl = null;
 
 /* ─── HELP MODAL ─── */
 const helpBtn = document.getElementById("help-btn");
@@ -97,6 +99,7 @@ form.addEventListener("submit", async (event) => {
 /* ─── LOADING STATE ─── */
 function setLoadingState(isLoading) {
   runButton.disabled = isLoading;
+  runButton.setAttribute("aria-busy", isLoading ? "true" : "false");
   runButton.classList.toggle("is-loading", isLoading);
 
   if (isLoading) {
@@ -136,9 +139,11 @@ function renderResults(payload) {
   }
 
   // Download
+  revokeDownloadObjectUrl();
   if (payload.csvData) {
     const blob = new Blob([payload.csvData], { type: "text/csv" });
-    downloadLink.href = URL.createObjectURL(blob);
+    downloadObjectUrl = URL.createObjectURL(blob);
+    downloadLink.href = downloadObjectUrl;
     downloadLink.download = "events.csv";
   } else {
     downloadLink.href = payload.downloadUrl;
@@ -162,6 +167,7 @@ function renderResults(payload) {
 
   // Store all events for replay linking
   window.__allEvents = payload.events;
+  syncReplayAvailability(payload);
 }
 
 /* ─── TABLE BUILDERS ─── */
@@ -296,15 +302,10 @@ function drawPitch(events) {
 
 /* ─── HELPERS ─── */
 function norm(v) { return v === null || v === undefined || v === "" ? "—" : String(v); }
-function fmtPct(v) { return `${(v * 100).toFixed(1)}%`; }
+function fmtPct(v) { return Number.isFinite(v) ? `${(v * 100).toFixed(1)}%` : "—"; }
 function esc(v) {
   return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
-
-/* ─── SPIN ANIMATION (injected) ─── */
-const style = document.createElement("style");
-style.textContent = `@keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin 1s linear infinite}`;
-document.head.appendChild(style);
 
 /* ═══════════════════════════════════════════════════════
    MATCH REPLAY SYSTEM
@@ -326,16 +327,6 @@ let replaySpeed = 1;
 let replayAnim = null;
 let lastGameId = null;
 
-// Enable "Load Frames" after a successful analysis
-const origRender = renderResults;
-renderResults = function(payload) {
-  origRender.call(this, payload);
-  if (payload.game.id !== "uploaded") {
-    lastGameId = payload.game.id;
-    replayLoad.disabled = false;
-  }
-};
-
 // Load Frames button
 if (replayLoad) {
   replayLoad.addEventListener("click", async () => {
@@ -356,6 +347,9 @@ if (replayLoad) {
       if (!res.ok) throw new Error(data.detail || "Failed");
 
       replayFrames = data.frames;
+      if (!replayFrames.length) {
+        throw new Error("No replay frames were returned for that range.");
+      }
       replayIdx = 0;
       replayScrubber.max = replayFrames.length - 1;
       replayScrubber.value = 0;
@@ -440,7 +434,8 @@ function drawReplayFrame(idx) {
   replayCtx.strokeRect(pad+pw-gaW, H/2-gaH/2, gaW, gaH);
 
   // Draw home players (blue)
-  fr.home.forEach(([x, y]) => {
+  fr.home.forEach((player, index) => {
+    const { x, y, number } = normalizeReplayPlayer(player, index);
     const px = pad + x * pw, py = pad + y * ph;
     replayCtx.beginPath();
     replayCtx.arc(px, py, 8, 0, Math.PI * 2);
@@ -457,13 +452,14 @@ function drawReplayFrame(idx) {
         replayCtx.fillStyle = "white";
         replayCtx.font = "bold 12px Inter, sans-serif";
         replayCtx.textAlign = "center";
-        replayCtx.fillText(`Home #${num}`, px, py - 15);
+        replayCtx.fillText(`Home #${number}`, px, py - 15);
       }
     }
   });
 
   // Draw away players (orange)
-  fr.away.forEach(([x, y]) => {
+  fr.away.forEach((player, index) => {
+    const { x, y, number } = normalizeReplayPlayer(player, index);
     const px = pad + x * pw, py = pad + y * ph;
     replayCtx.beginPath();
     replayCtx.arc(px, py, 8, 0, Math.PI * 2);
@@ -480,7 +476,7 @@ function drawReplayFrame(idx) {
         replayCtx.fillStyle = "white";
         replayCtx.font = "bold 12px Inter, sans-serif";
         replayCtx.textAlign = "center";
-        replayCtx.fillText(`Away #${num}`, px, py - 15);
+        replayCtx.fillText(`Away #${number}`, px, py - 15);
       }
     }
   });
@@ -520,6 +516,51 @@ function fmtTime(s) {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }
 
+function revokeDownloadObjectUrl() {
+  if (!downloadObjectUrl) return;
+  URL.revokeObjectURL(downloadObjectUrl);
+  downloadObjectUrl = null;
+}
+
+function syncReplayAvailability(payload) {
+  if (!replayLoad || !replayPlay || !replayScrubber) return;
+
+  replayPlaying = false;
+  cancelAnimationFrame(replayAnim);
+  playIcon.style.display = "block";
+  pauseIcon.style.display = "none";
+
+  if (payload.game.id === "uploaded") {
+    lastGameId = null;
+    replayFrames = [];
+    replayIdx = 0;
+    replayLoad.disabled = true;
+    replayLoad.textContent = "Replay for sample games only";
+    replayPlay.disabled = true;
+    replayScrubber.disabled = true;
+    replayScrubber.max = 0;
+    replayScrubber.value = 0;
+    drawReplayPlaceholder("Replay is currently available for built-in sample games.");
+    return;
+  }
+
+  lastGameId = payload.game.id;
+  replayLoad.disabled = false;
+  replayLoad.textContent = "Load Frames";
+}
+
+function normalizeReplayPlayer(player, index) {
+  if (Array.isArray(player)) {
+    return { x: player[0], y: player[1], number: index + 1 };
+  }
+
+  return {
+    x: player.x,
+    y: player.y,
+    number: player.number || index + 1,
+  };
+}
+
 let __mouseX = null;
 let __mouseY = null;
 if (replayCanvas) {
@@ -534,8 +575,8 @@ if (replayCanvas) {
   });
 }
 
-// Draw empty replay pitch on load
-if (replayCtx) {
+function drawReplayPlaceholder(message) {
+  if (!replayCtx) return;
   const W = replayCanvas.width, H = replayCanvas.height;
   replayCtx.fillStyle = "#0c1222";
   replayCtx.fillRect(0, 0, W, H);
@@ -549,7 +590,12 @@ if (replayCtx) {
   replayCtx.fillStyle = "rgba(255,255,255,0.3)";
   replayCtx.font = "500 16px Inter, sans-serif";
   replayCtx.textAlign = "center";
-  replayCtx.fillText("Run analysis then click \"Load Frames\" to start replay", W/2, H/2);
+  replayCtx.fillText(message, W/2, H/2);
+}
+
+// Draw empty replay pitch on load
+if (replayCtx) {
+  drawReplayPlaceholder('Run analysis then click "Load Frames" to start replay');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -622,10 +668,10 @@ function buildKeyMoments(events) {
         </div>
         ${chainHtml}
         <div class="moment-actions">
-          <button class="btn-ghost" onclick="watchMoment(${chainStartFrame}, ${chainEndFrame})">
+          <button class="btn-ghost" data-watch-start="${chainStartFrame}" data-watch-end="${chainEndFrame}">
             ▶ Watch Build-Up
           </button>
-          <button class="btn-ghost" onclick="watchMoment(${shotFrame - 25}, ${shotFrame + 25})">
+          <button class="btn-ghost" data-watch-start="${shotFrame - 25}" data-watch-end="${shotFrame + 25}">
             🎯 Watch Shot
           </button>
         </div>
@@ -635,6 +681,14 @@ function buildKeyMoments(events) {
 
   container.innerHTML = html;
   container.classList.remove("empty-msg");
+}
+
+if (momentsList) {
+  momentsList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-watch-start][data-watch-end]");
+    if (!button) return;
+    watchMoment(Number(button.dataset.watchStart), Number(button.dataset.watchEnd));
+  });
 }
 
 /**
@@ -654,4 +708,3 @@ function watchMoment(startFrame, endFrame) {
     document.getElementById("replay-load").click();
   }, 400);
 }
-

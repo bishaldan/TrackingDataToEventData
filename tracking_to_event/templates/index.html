@@ -85,6 +85,7 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <span class="file-drop-text">Choose file or drag here</span>
               </div>
+              <p class="form-hint">Upload Metrica-style CSVs only. Files are validated and capped at 64 MB each.</p>
             </div>
 
             <!-- Frame Range -->
@@ -269,11 +270,7 @@
       </section>
     </main>
 
-    <script>
-      window.TRACKING_TO_EVENT_BOOTSTRAP = {
-        games: {{ games | tojson }}
-      };
-    </script>
+    <script id="bootstrap-data" type="application/json">{{ {"games": games} | tojson }}</script>
     <script src="/static/app.js"></script>
 
     <!-- Help Modal -->

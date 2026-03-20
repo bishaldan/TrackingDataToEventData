@@ -212,6 +212,12 @@ body {
 }
 .form-select option { background: var(--sidebar-bg); color: #fff; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.form-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--sidebar-text);
+}
 
 /* File Drop */
 .file-drop {
@@ -238,6 +244,8 @@ body {
   cursor: pointer;
 }
 .file-drop-text { font-size: 12px; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Primary Button */
 .btn-primary {
@@ -871,4 +879,3 @@ body {
 .help-section strong {
   color: var(--text-primary);
 }
-
