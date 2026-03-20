@@ -40,6 +40,36 @@ Originally inspired by and built upon the core heuristic algorithms from [JohnCo
   <img src="docs/images/key_moments.png" alt="Key Moments Engine" width="80%">
 </p>
 
+## ⚙️ System Architecture
+
+```mermaid
+flowchart TD
+    subgraph "Input Layer"
+        A1[Raw Tracking CSV\nHome & Away Coordinates] --> B
+    end
+    
+    subgraph "FastAPI Backend Engine"
+        B[Data Parser / Metrica] --> C{Heuristic Engine\npipeline.py}
+        C --> D[Possession Logic]
+        C --> E[Pass / Shot / Recovery Detection]
+        E --> F[Event Sequence Generator]
+        D --> F
+    end
+    
+    subgraph "Frontend Dashboard"
+        F --> |JSON Payload| G[Vue/Vanilla JS Client]
+        G --> H1(Event Timeline Strip)
+        G --> H2(Possession Bar & Stats)
+        G --> H3(2D Match Replay Canvas)
+        G --> H4[Key Moments & Build-Up Engine]
+        H4 -.->|Watch Build-Up| H3
+    end
+    
+    subgraph "Output"
+        F --> I[Formatted Event Data CSV]
+    end
+```
+
 ## 🚀 Quick Start (Docker)
 
 The fastest and easiest way to use the dashboard is via Docker.

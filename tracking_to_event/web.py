@@ -31,6 +31,14 @@ def create_app(data_dir: str | Path = "data") -> FastAPI:
     templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
     @app.get("/", response_class=HTMLResponse)
+    async def landing(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "landing.html",
+            {},
+        )
+
+    @app.get("/dashboard", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:
         games = list_supported_games(app.state.data_dir)
         return templates.TemplateResponse(
