@@ -1,49 +1,94 @@
-# Tracking Data To Event Data
-A Python script to convert football tracking data into event data following Metrica's style of Event Data. Learn more about the creation of this script from my [Medium Article](https://medium.com/p/1730c58ad598?postPublishedType=initial).
+<p align="center">
+  <img src="docs/images/dashboard_top.png" alt="Tracking to Event Studio" width="100%">
+</p>
 
-![Event](./images/events.png)
+# ⚽ Tracking to Event Studio
 
-## Getting Started
+![Demo Video](docs/images/demo.webp)
 
-1. Clone the repository
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![FastAPI](https://img.shields.io/badge/backend-FastAPI-009688)
+![Docker](https://img.shields.io/badge/docker-ready-2496ED)
 
-   ```shell
-   git clone https://github.com/JohnComonitski/TrackingDataToEventData.git
-   ```
+**Tracking to Event Studio** is a professional-grade analytical dashboard that automatically converts raw, low-frequency football tracking data (e.g., player coordinates) into rich, high-frequency event sequences (Passes, Shots, Recoveries, Ball Losses, etc.).
 
-2. From the `./TrackingDataToEventData` directory, clone the Football Match Analysis library
+Originally inspired by and built upon the core heuristic algorithms from [JohnComonitski/TrackingDataToEventData](https://github.com/JohnComonitski/TrackingDataToEventData), this project completely redesigns the experience into a modern, interactive web application featuring a stunning UI and advanced coaching analytics.
 
-   ```shell
-   git clone https://github.com/JohnComonitski/TrackingDataToEventData.git
-   ```
+## 🌟 Key Features
 
-3. Create and activate a Python
-   [virtual environment](https://docs.python.org/3/library/venv.html#creating-virtual-environments).
-   On GNU/Linux systems this is as easy as:
+### 1. Advanced Analytics Dashboard
+- **Instant Insights**: Instantly view generated event counts, matched ratios against reference data, and mean frame error metrics.
+- **Player Stats**: Automatically calculated touches, passes, shots, recoveries, and losses for every player on the pitch.
+- **Possession Tracking**: Dynamic "Home vs Away" possession percentage bar based on ball control durations.
 
-   ```shell
-   python3 -m venv .venv
-   . .venv/bin/activate
-   # Work inside the environment.
-   ```
+### 2. 🎬 Animated Match Replay & Pitch Visualization
+- **2D Event Map**: Static pitch drawing of all detected events (passes, shots, etc.) across the game.
+- **Interactive Replay**: Watch the players and the ball move in real-time. Features include **Scrubbing, Play/Pause, and Speed Controls**.
+- **Coach's View**: Replay includes **Player Jersey Numbers** and a **Ball Movement Trail** to easily track patterns of play.
 
-4. Install the Python dependencies
+<p align="center">
+  <img src="docs/images/replay_trail.png" alt="Replay Visualizer" width="80%">
+</p>
 
-   ```shell
-   pip install -r requirements.txt
-   ```
+### 3. 🎯 Key Moments & Build-Up Play Analysis
+- Automatically detect **Goals and Shots**.
+- **Trace the Build-up**: The engine works backwards from every shot to map the unbroken sequence of passes and recoveries that led to the event.
+- **Watch Build-Up**: Click a button to instantly auto-load the exact frame sequence of the build-up chain into the Match Replay.
 
-5. In `generate_event_data.py` edit the 'Getting Started' parameters as you see fit.
+<p align="center">
+  <img src="docs/images/key_moments.png" alt="Key Moments Engine" width="80%">
+</p>
 
-    ```# Data Source
-    DATADIR = './data'
-    game_id = 1
-    
-    # Script Parameters
-    generate_video = False # Generate video from snalysis
-    print_frames = True    # Print Frames (for debuging)
-    start_frame = 0        # Start Frame
-    end_frame = 4000       # End Frame
-    ```
-    
-6. Run `generate_event_data.py` to start generating event data!
+## 🚀 Quick Start (Docker)
+
+The fastest and easiest way to use the dashboard is via Docker.
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/YOUR_USERNAME/TrackingDataToEventData.git
+cd TrackingDataToEventData
+
+# 2. Build the Docker image
+docker build -t tracking-to-event .
+
+# 3. Run the container
+docker run -p 8000:8000 tracking-to-event
+```
+
+**Open your browser and navigate to `http://localhost:8000`.**
+
+## 💻 Manual Setup (Python)
+
+If you prefer to run it locally without Docker:
+
+```bash
+# 1. Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Start the FastAPI server
+uvicorn web:app --reload --host 0.0.0.0 --port 8000
+```
+
+
+## 📂 Project Structure
+
+- `tracking_to_event/models.py`: Core data classes (Player, Frame, Event)
+- `tracking_to_event/pipeline.py`: The event extraction engine (Heuristics, Velocity tracking, Possession Logic)
+- `tracking_to_event/validation.py`: Scoring engine comparing generated vs. human-annotated reference events
+- `web.py`: FastAPI server handling data parsing, algorithm execution, and serving the frontend
+- `tracking_to_event/templates/index.html`: Modern, card-based premium UI layout
+- `tracking_to_event/static/app.js`: Complex frontend logic handling HTML5 Canvas rendering, replay animations, and build-up chain tracing
+
+## 🤝 Acknowledgements
+
+- Core extraction algorithms inspired by [JohnComonitski/TrackingDataToEventData](https://github.com/JohnComonitski/TrackingDataToEventData).
+- Dataset provided by Metrica Sports.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

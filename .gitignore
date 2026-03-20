@@ -209,4 +209,5 @@ __marimo__/
 FootballMatchAnalysis
 FootballMatchAnalysis/*
 Frames/*
+out/
 .DS_Store

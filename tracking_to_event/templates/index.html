@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tracking to Event Studio</title>
+    <meta name="description" content="Generate football event feeds from tracking data with real-time 2D pitch visualization.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/app.css">
+  </head>
+  <body>
+
+    <!-- Top Navigation Bar -->
+    <nav class="topbar">
+      <div class="topbar-inner">
+        <div class="topbar-brand">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            <path d="M2 12h20"/>
+          </svg>
+          <span class="brand-name">Event Studio</span>
+          <span class="brand-badge">v2.0</span>
+        </div>
+        <div class="topbar-links">
+          <span class="topbar-status" id="nav-status">
+            <span class="status-dot"></span>
+            Ready
+          </span>
+        </div>
+      </div>
+    </nav>
+
+    <main class="app-layout">
+
+      <!-- ─── LEFT SIDEBAR ─── -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-section">
+          <h3 class="sidebar-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+            Analysis
+          </h3>
+          <form id="analysis-form" class="sidebar-form">
+
+            <!-- Mode Tabs -->
+            <div class="mode-tabs" id="mode-tabs">
+              <button type="button" class="mode-tab active" data-mode="sample">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14,2 14,8 20,8"/></svg>
+                Sample
+              </button>
+              <button type="button" class="mode-tab" data-mode="upload">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload
+              </button>
+            </div>
+
+            <!-- Sample Mode -->
+            <div id="sample-inputs" class="form-group">
+              <label class="form-label" for="game-id">Game</label>
+              <select id="game-id" name="gameId" class="form-select">
+                {% for game in games %}
+                <option value="{{ game.id }}">{{ game.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Upload Mode -->
+            <div id="upload-inputs" class="form-group" style="display:none;">
+              <label class="form-label">Home Tracking CSV</label>
+              <div class="file-drop" id="home-drop">
+                <input id="home-file" type="file" accept=".csv" disabled>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span class="file-drop-text">Choose file or drag here</span>
+              </div>
+              <label class="form-label" style="margin-top:12px;">Away Tracking CSV</label>
+              <div class="file-drop" id="away-drop">
+                <input id="away-file" type="file" accept=".csv" disabled>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span class="file-drop-text">Choose file or drag here</span>
+              </div>
+            </div>
+
+            <!-- Frame Range -->
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="start-frame">Start Frame</label>
+                <input id="start-frame" name="startFrame" type="number" min="0" placeholder="0" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="end-frame">End Frame</label>
+                <input id="end-frame" name="endFrame" type="number" min="0" placeholder="All" class="form-input">
+              </div>
+            </div>
+
+            <button id="run-button" type="submit" class="btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21 5,3"/></svg>
+              Run Analysis
+            </button>
+          </form>
+        </div>
+
+        <!-- Games List -->
+        <div class="sidebar-section">
+          <h3 class="sidebar-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Available Games
+          </h3>
+          {% for game in games %}
+          <div class="game-item">
+            <div class="game-item-dot"></div>
+            <div>
+              <div class="game-item-name">{{ game.label }}</div>
+              <div class="game-item-meta">{{ game.home_tracking | truncate(40) }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </aside>
+
+      <!-- ─── MAIN CONTENT ─── -->
+      <section class="content">
+
+        <!-- Status Banner -->
+        <div class="status-banner" id="status-banner">
+          <div class="status-banner-icon" id="status-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div>
+            <h2 id="status-title" class="status-banner-title">Ready to analyze</h2>
+            <p id="status-copy" class="status-banner-desc">Select a game and click "Run Analysis" to generate events.</p>
+          </div>
+          <a id="download-link" class="btn-download is-hidden" href="#">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download CSV
+          </a>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="metrics-row" id="metrics-row">
+          <div class="metric">
+            <span class="metric-label">Generated Events</span>
+            <span class="metric-value" id="metric-generated">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Matched Ratio</span>
+            <span class="metric-value" id="metric-match">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Sequence Agreement</span>
+            <span class="metric-value" id="metric-sequence">—</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Mean Frame Error</span>
+            <span class="metric-value" id="metric-frame-error">—</span>
+          </div>
+        </div>
+
+        <!-- Possession Bar -->
+        <div class="card" id="possession-card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Possession</h3>
+              <p class="card-subtitle">Ball possession split by team</p>
+            </div>
+          </div>
+          <div class="possession-bar-wrap">
+            <div class="possession-bar">
+              <div id="possession-home" class="poss-fill poss-home" style="width:50%"><span>Home 50%</span></div>
+              <div id="possession-away" class="poss-fill poss-away" style="width:50%"><span>Away 50%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Event Timeline -->
+        <div class="card" id="timeline-card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Event Timeline</h3>
+              <p class="card-subtitle">All events displayed chronologically by frame</p>
+            </div>
+          </div>
+          <div class="timeline-strip-wrap">
+            <canvas id="timeline-canvas" width="1200" height="60"></canvas>
+          </div>
+        </div>
+
+        <!-- Player Stats -->
+        <div class="card" id="playerstats-card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Player Stats</h3>
+              <p class="card-subtitle">Per-player event breakdown</p>
+            </div>
+          </div>
+          <div id="player-stats-wrap" class="table-scroll empty-msg">
+            Player statistics will appear after analysis.
+          </div>
+        </div>
+
+        <!-- Pitch Visualization -->
+        <div class="card" id="pitch-card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Event Map</h3>
+              <p class="card-subtitle">2D pitch visualization of detected events</p>
+            </div>
+            <div class="pitch-legend">
+              <span class="legend-item"><span class="legend-dot legend-home"></span>Home</span>
+              <span class="legend-item"><span class="legend-dot legend-away"></span>Away</span>
+              <span class="legend-item"><span class="legend-dot legend-shot"></span>Shot</span>
+            </div>
+          </div>
+          <div class="pitch-wrapper">
+            <canvas id="pitch-canvas" width="1050" height="680"></canvas>
+          </div>
+        </div>
+
+        <!-- Match Replay -->
+        <div class="card" id="replay-card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Match Replay</h3>
+              <p class="card-subtitle">Animated player tracking with ball movement</p>
+            </div>
+            <div class="replay-controls-top">
+              <div class="replay-frame-range">
+                <label class="range-label">From
+                  <input id="replay-start" type="number" class="range-input" placeholder="0" min="0">
+                </label>
+                <label class="range-label">To
+                  <input id="replay-end" type="number" class="range-input" placeholder="All" min="0">
+                </label>
+              </div>
+              <button id="replay-load" class="btn-sm" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Load Frames
+              </button>
+            </div>
+          </div>
+          <div class="pitch-wrapper">
+            <canvas id="replay-canvas" width="1050" height="680"></canvas>
+          </div>
+          <div class="replay-toolbar">
+            <button id="replay-play" class="btn-icon" disabled title="Play / Pause">
+              <svg id="play-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+              <svg id="pause-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            <input id="replay-scrubber" type="range" min="0" max="0" value="0" class="scrubber" disabled>
+            <span id="replay-time" class="replay-time">00:00 / 00:00</span>
+            <div class="speed-controls">
+              <button class="speed-btn active" data-speed="1">1×</button>
+              <button class="speed-btn" data-speed="2">2×</button>
+              <button class="speed-btn" data-speed="4">4×</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Moments / Coach Analysis -->
+        <div class="card" id="moments-card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">⚽ Key Moments &amp; Build-Up Analysis</h3>
+              <p class="card-subtitle">Shots, goals, and the possession chains that led to them</p>
+            </div>
+          </div>
+          <div id="moments-list" class="moments-list empty-msg">
+            Run an analysis to detect key moments (shots, goals, and their build-up play sequences).
+          </div>
+        </div>
+
+        <!-- Type Counts -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h3 class="card-title">Type Comparison</h3>
+              <p class="card-subtitle">Generated events vs reference labels</p>
+            </div>
+          </div>
+          <div id="type-counts" class="card-body empty-msg">Run an analysis to see type counts.</div>
+        </div>
+
+        <!-- Data Tables Side by Side -->
+        <div class="tables-row">
+          <div class="card table-card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Generated Events</h3>
+                <p class="card-subtitle">First 120 rows</p>
+              </div>
+            </div>
+            <div id="generated-table-wrap" class="table-scroll empty-msg">Generated rows will appear here.</div>
+          </div>
+          <div class="card table-card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Reference Labels</h3>
+                <p class="card-subtitle">First 40 rows</p>
+              </div>
+            </div>
+            <div id="reference-table-wrap" class="table-scroll empty-msg">Reference rows will appear here.</div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <script>
+      window.TRACKING_TO_EVENT_BOOTSTRAP = {
+        games: {{ games | tojson }}
+      };
+    </script>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
